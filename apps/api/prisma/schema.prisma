@@ -16,10 +16,16 @@ enum EventType {
 }
 
 model EventDetail {
-  id Int @id @default(autoincrement())
-  title String @db.VarChar(75)
-  summary String @db.VarChar(140)
-  type EventType @default(SINGLE)
+  id      Int       @id @default(autoincrement())
+  title   String    @db.VarChar(75)
+  summary String    @db.VarChar(140)
+  type    EventType @default(SINGLE)
+}
+
+model Event_category {
+  id   Int    @id @default(autoincrement())
+  name String
+  // events Events[]
 }
 
 model EventTransaction {
@@ -31,11 +37,75 @@ model EventPromotion {
 }
 
 model EventRating {
-  id Int @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
+  event_id Int
+  user_id  Int
+  comments String?
+  rating   Int?
+  // events   Events  @relation(fields: [event_id], references: [id])
+}
+
+model Promotions {
+  id         Int        @id @default(autoincrement())
+  event_id   Int?
+  name       String
+  type       String
+  image      String?
+  is_banner  Boolean
+  start_date DateTime   @db.DateTime
+  end_date   DateTime   @db.DateTime
+  created_by Int
+  updated_by Int?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  deletedAt  DateTime?  @db.DateTime
+  // events     Events?    @relation(fields: [event_id], references: [id])
+  vouchers   Vouchers[]
+}
+
+model Vouchers {
+  id             Int         @id @default(autoincrement())
+  promotion_id   Int?
+  user_id        Int?
+  payment_method Int?
+  voucher_code   String
+  qty            Int
+  type           String
+  category       String
+  amount         Int
+  status         Boolean
+  start_date     DateTime    @db.DateTime
+  end_date       DateTime    @db.DateTime
+  created_by     Int?
+  updated_by     Int?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?   @db.DateTime
+  user           Users?      @relation(fields: [user_id], references: [id])
+  promotions     Promotions? @relation(fields: [promotion_id], references: [id])
+}
+
+model Payment_method {
+  id           Int            @id @default(autoincrement())
+  name         String
+  admin_fee    Decimal        @db.Decimal(10, 0)
+  transactions Transactions[]
+}
+
+model Points {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  point      Decimal  @db.Decimal(10, 0)
+  expired_at DateTime @db.DateTime
+  users      Users    @relation(fields: [user_id], references: [id])
 }
 
 model PrizePoint {
-  id Int @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  point      Decimal  @db.Decimal(10, 0)
+  expired_at DateTime @db.DateTime
+  users      Users    @relation(fields: [user_id], references: [id])
 }
 
 enum Role {
@@ -43,11 +113,96 @@ enum Role {
   ORGANIZERS
 }
 
-model User {
-  id Int @id @default(autoincrement())
-  email String  @unique
-  name  String? 
-  role  Role    @default(ATTENDEES)
+model Countries {
+  id      Int       @id @default(autoincrement())
+  name    String
+  regions Regions[]
+}
+
+model Regions {
+  id          Int       @id @default(autoincrement())
+  country_id  Int
+  region_name String
+  countries   Countries @relation(fields: [country_id], references: [id])
+  cities      Cities[]
+}
+
+model Cities {
+  id        Int     @id @default(autoincrement())
+  region_id Int
+  city_name String
+  regions   Regions @relation(fields: [region_id], references: [id])
+  // events    Events[]
+}
+
+model Transactions {
+  id                Int            @id @default(autoincrement())
+  code              String
+  user_id           Int
+  event_id          Int
+  qty               Int
+  tax               Decimal        @db.Decimal(10, 0)
+  point_used        Decimal?       @db.Decimal(10, 0)
+  total_amount      Decimal        @db.Decimal(10, 0)
+  voucher_id        Int?
+  payment_method_id Int
+  status            String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?      @db.DateTime
+  user              Users          @relation(fields: [user_id], references: [id])
+  payment_method    Payment_method @relation(fields: [payment_method_id], references: [id])
+  tickets           Tickets[]
+}
+
+model Users {
+  id                 Int                  @id @default(autoincrement())
+  fullname           String
+  email              String               @unique
+  phone_number       String?              @unique
+  password           String
+  referral_code      String?
+  role_id            Int                  @default(1)
+  total_point        Decimal              @db.Decimal(10, 0)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deletedAt          DateTime?            @db.DateTime
+  referral_code_user Referral_code_user[]
+  role               Roles                @relation(fields: [role_id], references: [id])
+  transactions       Transactions[]
+  vouchers           Vouchers[]
+  tickets            Tickets[]
+  points             Points[]
+  PrizePoint         PrizePoint[]
+}
+
+model Roles {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  users Users[]
+}
+
+model Referral_code_user {
+  id             Int   @id @default(autoincrement())
+  master_user_id Int
+  user_id        Int
+  users          Users @relation(fields: [user_id], references: [id])
+}
+
+model Tickets {
+  id             Int          @id @default(autoincrement())
+  transaction_id Int
+  user_id        Int
+  event_id       Int
+  code           String
+  status         String
+  valid_until    DateTime     @db.DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?    @db.DateTime
+  transaction    Transactions @relation(fields: [transaction_id], references: [id])
+  users          Users        @relation(fields: [user_id], references: [id])
+  // events         Events       @relation(fields: [event_id], references: [id])
 }
 
 model Sample {
